@@ -6,64 +6,25 @@ using System.Threading.Tasks;
 
 namespace Cars.bg
 {
-    public abstract class User
+    public class Administrator : IAdministrator
     {
-        public string username { get; }
+        public Administrator()
+        {
 
-        public string password { get; }
+        }
 
         public string cars { get; set; }
-
+        public string gender { get; set; }
         public string messages { get; set; }
-
-        public string gender { get; }
-
-        public string type { get; }
-
-        public User()
-        {
-
-        }
-
-        public User(string username, string cars, string type)
-        {
-            this.username = username;
-            this.cars = cars;
-            this.type = type;
-        }
-
-        public User(string username, string password, string gender, string type) 
-        {
-            this.username = username;
-            this.password = password;
-            this.gender = gender;
-            this.type = type;
-        }
-
-        public User(string username, string password, string cars, string messages, string gender, string type)
-        {
-            this.username = username;
-            this.password = password;
-            this.cars = cars;
-            this.messages = messages;
-            this.gender = gender;
-            this.type = type;
-        }
-
-        public abstract void signUp(string username);
-
-        public abstract User signIn();
-
-        public virtual void deleteUser()
-        {
-            Console.WriteLine("You do not have permission for that!");
-        }
+        public string password { get; set; }
+        public string type { get; set; }
+        public string username { get; set; }
 
         public virtual void writeMessage()
         {
             Commands.writeMessage(this.username);
         }
-  
+
         public virtual void seeAllNewMessages()
         {
             Commands.seeAllNewMessages(this.username);
@@ -98,7 +59,7 @@ namespace Cars.bg
 
             if (correctCarId == true)
             {
-                Commands.deleteCar(carId);
+                Commands.deleteCar(carId, this.username);
             }
             else
             {
@@ -122,12 +83,21 @@ namespace Cars.bg
 
             var details = Commands.getDetails("Cars", "*", brand, model);
 
-            foreach(var detail in details)
+            foreach (var detail in details)
             {
                 detail.show();
                 Console.WriteLine();
-
             }
         }
+
+        public void deleteUser()
+        {
+            Console.WriteLine("Enter the profile's username you want to delete: ");
+            string deleteUsername = Console.ReadLine();
+
+            Commands.deleteProfile(deleteUsername);
+        }
+
+
     }
 }

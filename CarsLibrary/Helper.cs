@@ -11,7 +11,7 @@ namespace Cars.bg
     {
         public static string CnnString(string name)
         {
-            return ConfigurationManager.ConnectionStrings[name].ConnectionString;
+            return "Server=localhost;Database=Cars.bg;Trusted_Connection=True;";
         }
     }
 }

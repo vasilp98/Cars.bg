@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CarsLibrary.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlClient;
@@ -20,7 +21,7 @@ namespace Cars.bg
             Console.WriteLine("Welcome to Cars.bg");
             Console.ResetColor();
 
-            User unregistratedUser = new UnregistratedUser();
+            IUnregistratedUser unregistratedUser = new UnregistratedUser();
             
             string input = null;
             while (input != "exit")
@@ -43,7 +44,7 @@ namespace Cars.bg
 
                 if(input == "signIn")
                 {
-                    User user = unregistratedUser.signIn();
+                    IUser user = unregistratedUser.signIn(); 
 
                     string signInCommand = null;
 
@@ -83,12 +84,12 @@ namespace Cars.bg
                         {
                             Console.WriteLine("Enter username you want to see information about: ");
                             string username = Console.ReadLine();
-                            User shownUser = Commands.showUser(username);
+                            IUser shownUser = Commands.showUser(username);
                             shownUser.show();
                         }
                         if(signInCommand == "deleteUser")
                         {
-                            user.deleteUser();       
+                            //user.deleteUser();       
                         }
                         if(signInCommand == "searchCar")
                         {

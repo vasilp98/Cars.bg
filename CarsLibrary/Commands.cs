@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CarsLibrary.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -12,7 +13,7 @@ namespace Cars.bg
 {
     public static class Commands
     {
-        public static User signIn()
+        public static IUser signIn()
         {
             Console.WriteLine("Username: ");
             string username = Console.ReadLine();
@@ -64,17 +65,41 @@ namespace Cars.bg
 
             if (type == "regular user")
             {
-                User user = new RegularUser(username, Password, cars, messages, gender, type);
+                IUser user = new RegularUser
+                {
+                    username = username,
+                    password = Password,
+                    cars = cars,
+                    messages = messages,
+                    gender = gender,
+                    type = type
+                };
                 return user;
             }
-            else if(type == "dealer")
+            else if (type == "dealer")
             {
-                User user = new Dealer(username, Password, cars, messages, gender, type);
+                IUser user = new Dealer
+                {
+                    username = username,
+                    password = Password,
+                    cars = cars,
+                    messages = messages,
+                    gender = gender,
+                    type = type
+                };
                 return user;
             }
             else
             {
-                User user = new Administrator(username, Password, messages, gender, type);
+                IAdministrator user = new Administrator
+                {
+                    username = username,
+                    password = Password,
+                    messages = messages,
+                    gender = gender,
+                    type = type
+                };
+
                 return user;
             }
 
@@ -112,15 +137,28 @@ namespace Cars.bg
             //Connection to the Database
             if (type == "regular user")
             {
-                User user = new RegularUser(username, Password, gender, type);
+                IUser user = new RegularUser
+                {
+                    username = username,
+                    password = Password,
+                    gender = gender,
+                    type = type
+                };
                 Commands.insertUser(user);
             }
             else
             {
-                User user = new Dealer(username, Password, gender, type);
+                IUser user = new Dealer
+                {
+                    username = username,
+                    password = Password,
+                    gender = gender,
+                    type = type
+                };
+
                 Commands.insertUser(user);
             }
-            
+
         }
 
         public static void seeAllNewMessages(string username)
@@ -201,7 +239,7 @@ namespace Cars.bg
                 SqlDataReader reader = cmd.ExecuteReader();
 
                 int carId = 0;
-                while(reader.Read())
+                while (reader.Read())
                 {
                     carId = Int32.Parse(reader["carId"].ToString());
                 }
@@ -236,30 +274,40 @@ namespace Cars.bg
             return car;
         }
 
-        public static User showUser(string username)
+        public static IUser showUser(string username)
         {
             string gender = getData("Users", "username", "gender", username);
             string cars = getData("Users", "username", "cars", username);
             string type = getData("Users", "username", "type", username);
 
-            if(type == "regular user")
+            if (type == "regular user")
             {
-                User user = new RegularUser(username, cars, type);
+                IUser user = new RegularUser
+                {
+                    username = username,
+                    cars = cars,
+                    type = type
+                };
                 return user;
             }
-            else if(type == "dealer")
+            else if (type == "dealer")
             {
-                User user = new Dealer(username, cars, type);
+                IUser user = new Dealer
+                {
+                    username = username,
+                    cars = cars,
+                    type = type
+                };
                 return user;
             }
             else
             {
-                User user = new Administrator();
+                IUser user = new Administrator();
                 return user;
             }
         }
 
-        public static void deleteCar(int carId)
+        public static void deleteCar(int carId, string username)
         {
             using (SqlConnection connection = new SqlConnection(Helper.CnnString("Cars.bg")))
             {
@@ -275,12 +323,12 @@ namespace Cars.bg
                     cmd.Dispose();
 
                     SqlDataAdapter adapter = new SqlDataAdapter();
-                    adapter.UpdateCommand = new SqlCommand($"UPDATE Users SET cars = (SELECT REPLACE(cars, ',{carId}', '') FROM Users WHERE username = 'vasko') WHERE username = 'vasko'", connection);
+                    adapter.UpdateCommand = new SqlCommand($"UPDATE Users SET cars = (SELECT REPLACE(cars, ',{carId}', '') FROM Users WHERE username = '{username}') WHERE username = '{username}'", connection);
                     adapter.UpdateCommand.ExecuteNonQuery();
 
-                
+
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Console.WriteLine("There is not car with this ID!");
                 }
@@ -299,9 +347,32 @@ namespace Cars.bg
 
                 try
                 {
+                    SqlCommand command = new SqlCommand($"SELECT cars FROM Users WHERE username = '{username}'", connection);
+
+                    SqlDataReader reader = command.ExecuteReader();
+
+                    string cars = string.Empty;
+
+                    while (reader.Read())
+                    {
+                        cars += reader["cars"];
+                    }
+
+                    string[] carList = cars.Split(',');
+
+                    reader.Close();
+
                     SqlCommand cmd = new SqlCommand($"DELETE FROM Users WHERE username = '{username}'", connection);
 
                     cmd.ExecuteNonQuery();
+
+                    cmd.Dispose();
+
+                    for (int i = 1; i < carList.Length; i++)
+                    {
+                        cmd = new SqlCommand($"DELETE FROM Cars WHERE carId = {carList[i]}", connection);
+                        cmd.ExecuteNonQuery();
+                    }
                 }
                 catch (Exception)
                 {
@@ -333,14 +404,14 @@ namespace Cars.bg
                         output = reader[column].ToString();
                     }
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Console.WriteLine("Bad data!");
                 }
                 finally
                 {
-                    
-                    connection.Close();           
+
+                    connection.Close();
                 }
 
                 return output;
@@ -376,7 +447,7 @@ namespace Cars.bg
                         });
                     }
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Console.WriteLine("Bad data!");
                 }
@@ -405,7 +476,7 @@ namespace Cars.bg
 
                     cmd.Dispose();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Console.WriteLine("The data wasn't added!");
                 }
@@ -451,7 +522,7 @@ namespace Cars.bg
             }
         }
 
-        private static void insertUser(User user)
+        private static void insertUser(IUser user)
         {
             string salt = Commands.getSalt(10);
 
@@ -475,7 +546,7 @@ namespace Cars.bg
                     cmd.Parameters.AddWithValue("@messages", "");
                     cmd.Parameters.AddWithValue("@gender", user.gender);
                     cmd.Parameters.AddWithValue("@type", user.type);
-                    
+
 
                     int rows = cmd.ExecuteNonQuery();
                 }
@@ -486,10 +557,10 @@ namespace Cars.bg
                 finally
                 {
                     connection.Close();
-                } 
-            }    
+                }
+            }
         }
-  
+
         private static bool isInDatabase(string type, string input)
         {
             bool isValid = false;
@@ -507,14 +578,14 @@ namespace Cars.bg
                     List<string> list = new List<string>();
 
                     while (reader.Read())
-                    { 
+                    {
                         list.Add(reader[type].ToString());
                     }
 
                     isValid = list.Contains(input);
-                    
+
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Console.WriteLine("Bad data!");
                 }
@@ -571,6 +642,6 @@ namespace Cars.bg
             byte[] hash = sha256HashString.ComputeHash(bytes);
 
             return Convert.ToBase64String(hash) + " " + salt;
-        }  
-    }   
+        }
+    }
 }
